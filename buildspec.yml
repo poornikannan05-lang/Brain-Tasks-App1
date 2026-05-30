@@ -3,34 +3,40 @@ version: 0.2
 env:
   variables:
     AWS_DEFAULT_REGION: us-east-1
-    AWS_ACCOUNT_ID: 050083685935
     IMAGE_REPO_NAME: brain-tasks-app
     IMAGE_TAG: latest
+    PUBLIC_ECR_URI: public.ecr.aws/t5e7w0l5/brain-tasks-app
 
 phases:
-
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
+      - echo Logging in to Amazon ECR Public...
 
-      - REPOSITORY_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME
+      - aws --version
+      - docker --version
 
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      # Login to Public ECR
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 050083685935.dkr.ecr.us-east-1.amazonaws.com
 
   build:
     commands:
       - echo Build started on `date`
 
-      - docker build -t $IMAGE_REPO_NAME .
+      # Build Docker image
+      - docker build -t brain-tasks-app .
 
-      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $REPOSITORY_URI:$IMAGE_TAG
+      # Tag image
+      - docker tag brain-tasks-app:latest 050083685935.dkr.ecr.us-east-1.amazonaws.com/brain-tasks-app:latest
 
   post_build:
     commands:
-      - echo Pushing Docker image...
+      - echo Pushing Docker image to Public ECR...
 
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      # Push image
+      - docker push 050083685935.dkr.ecr.us-east-1.amazonaws.com/brain-tasks-app:latest
+
+      - echo Build completed on `date`
 
 artifacts:
   files:
-    - '**/*'
+    - "**/*"
